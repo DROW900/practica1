@@ -1,8 +1,11 @@
+from ast import Str
+from pysnmp.hlapi import *
 import json
 import os
 import random
 import time
 from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
 datos = []
 
 def consultaSNMP(comunidad,host,puerto,oid):
@@ -42,7 +45,7 @@ def guardarEnArchivo(mensaje):
     json.dump(datos, f)
     f.close()
     print(mensaje)
-    time.sleep(2)
+    time.sleep(1)
 
 def leerDispositivos():
     try:
@@ -52,7 +55,7 @@ def leerDispositivos():
         return datos
     except:
         print("Aún no existen registros")
-        time.sleep(2);
+        time.sleep(1);
         os.system("clear")
         return [];
 
@@ -75,7 +78,7 @@ def eliminarDispositivo():
         opt = opt - 1;
         datos.pop(opt)
         guardarEnArchivo("Se ha eliminado el elemento :D")
-        time.sleep(2)
+        time.sleep(1)
         return
 
 def generarReporte():
@@ -84,11 +87,75 @@ def generarReporte():
     if opt == 0:
         return
     print("Generando reporte para", datos[opt-1]['direccionIP'])
-    numero = random.randint(1,100);
-    nombre = "reporte"+str(numero)+".pdf"
-    c = canvas.Canvas(nombre);
-    c.drawCentredString(0,0,"Reporte")
+    informacionRequerida = obtenerInformacion(opt);
+    infoSistema = informacionRequerida[0]
+    infoInterfaces = informacionRequerida[1]
+    manipularCanva(infoSistema,infoInterfaces)
+    # Se genera el reporte del agente marcado
+    print("Se ha generado el reporte correctamente C:")
+    time.sleep(1)
+
+def manipularCanva(infoSistema,infoInterfaces):
+    w, h = A4
+    rutaImagen = ""
+    c = canvas.Canvas("Reporte.pdf", pagesize=A4)
+    #Se empieza a generar el reporte
+    if infoSistema[0] == "Linux":
+        rutaImagen = "./Logos/Linux.jpg"
+    else:
+        rutaImagen = "./Logos/Windows.jpg"
+    i = 50
+    c.drawInlineImage(rutaImagen,300,h-200,150,150)
+    c.drawString(50, h - i, "Sistema Operativo: "+infoSistema[0])
+    i = i+20
+    c.drawString(50, h - i, "Nombre Dispositivo: "+infoSistema[1])
+    i = i+20
+    c.drawString(50, h - i, "Contacto: "+infoSistema[2])
+    i = i+20
+    c.drawString(50, h - i, "Ubicación: "+infoSistema[3])
+    i = i+40
+    #Se empieza a imprimir la tabla de interfaces
+    c.drawString(50, h - i, "Número de interfaces: "+infoSistema[4])
+    i = i+20; 
+    for interfaz,status in infoInterfaces.items():
+        c.drawString(50, h - i, interfaz+": "+status)
+        i = i+20
+    c.showPage()
     c.save()
+
+def obtenerInformacion(opt):
+    comunidad = datos[opt-1]['nombreComunidad']
+    direccionIP = datos[opt-1]['direccionIP']
+    puerto = datos[opt-1]['puerto']
+    arrayInfo = [];
+    # Sistema Operativo
+    arrayInfo.append(consultaSNMP(comunidad,direccionIP,puerto,'1.3.6.1.2.1.1.1.0'))
+    # Nombre dispositivo
+    arrayInfo.append(consultaSNMP(comunidad,direccionIP,puerto,'1.3.6.1.2.1.1.5.0'))
+    # Contacto
+    arrayInfo.append(consultaSNMP(comunidad,direccionIP,puerto,'1.3.6.1.2.1.1.4.0'))
+    # Ubicación
+    arrayInfo.append(consultaSNMP(comunidad,direccionIP,puerto,'1.3.6.1.2.1.1.6.0'))
+    # Numero de interfaces
+    arrayInfo.append(consultaSNMP(comunidad,direccionIP,puerto,'1.3.6.1.2.1.2.1.0'))
+    numeroInterfaces = int(arrayInfo[4]);
+    # Se genera un diccionario de las interfaces
+    dictInterfaces = {}
+    i = 1
+    while i != numeroInterfaces+1:
+        oid = '1.3.6.1.2.1.2.2.1.2.'+ str(i)
+        nombreInterfaz = consultaSNMP(comunidad,direccionIP,puerto, oid)
+        oid = '1.3.6.1.2.1.2.2.1.7.'+ str(i)
+        estadoAministrativo = consultaSNMP(comunidad,direccionIP,puerto, oid)
+        if estadoAministrativo == '1':
+            dictInterfaces[nombreInterfaz] = "up"
+        elif estadoAministrativo == '2':
+            dictInterfaces[nombreInterfaz] = "down"
+        else:
+            dictInterfaces[nombreInterfaz] = "testing"
+        i = i+1;
+    return [arrayInfo,dictInterfaces]
+
 
 ## Generación del menú interactivo
 while True:
@@ -96,13 +163,13 @@ while True:
     datos = leerDispositivos();
     print("Sistema de Administración de Red")
     print("Practica 1 - Adquisición de Información")
-    print("Carlos Eduardo Muñoz Carbajal    4CM13   201963070\n")
+    print("Carlos Eduardo Muñoz Carbajal    4CM13   2019630370\n")
     print("1. Agregar dispositivo")
     print("2. Eliminar dispositivo")
     print("3. Generar Reporte")
     print("0. Salir")
 
-    opt = int(input("Ingresa la opción que desea realizar "))
+    opt = int(input("Ingresa la opción que desea realizar: "))
     match opt:
         case 1:
             agregarDispositivo();

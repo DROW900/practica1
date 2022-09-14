@@ -1,1 +1,1 @@
-[{"direccionIP": "192.168.0.1", "versionSNMP": "2", "nombreComunidad": "comunidadASR", "puerto": "80"}]
+[{"direccionIP": "192.168.0.16", "versionSNMP": "1", "nombreComunidad": "comunidadASR", "puerto": "161"}]
