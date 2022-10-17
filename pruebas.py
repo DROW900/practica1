@@ -1,4 +1,5 @@
 from ast import Str
+from datetime import datetime
 from pysnmp.hlapi import *
 import json
 import os
@@ -35,7 +36,8 @@ def agregarDispositivo():
         'direccionIP': direccionIP,
         'versionSNMP': versionSNMP,
         'nombreComunidad': nombreComunidad,
-        'puerto': puerto
+        'puerto': puerto,
+        'reportes': []
     }
     datos.append(dispositivo);
     guardarEnArchivo("Se ha realizado el registro correctamente :D")
@@ -76,10 +78,38 @@ def eliminarDispositivo():
         return
     else:
         opt = opt - 1;
+        eliminarReportes(opt-1);
         datos.pop(opt)
         guardarEnArchivo("Se ha eliminado el elemento :D")
         time.sleep(1)
         return
+
+def cambiarDispositivo():
+    os.system("clear");
+    listarDispositivos();
+    opt = int(input("Ingresa el dispositivo a modificar: "));
+    if opt == 0:
+        return
+    indice = opt-1;
+    modificarCampo("¿Desea modificar la dirección IP ", indice, "direccionIP");
+    modificarCampo("¿Desea modificar la versión SNMP ", indice, "versionSNMP");
+    modificarCampo("¿Desea modificar la comunidad ", indice, "nombreComunidad");
+    modificarCampo("¿Desea modificar el puerto ", indice, "puerto");
+    guardarEnArchivo("Se ha modificado el agente")
+
+def modificarCampo(mensaje,indice,campo):
+    os.system("clear");
+    print("1. Sí\n2. No\n");
+    entrada = int(input(mensaje + datos[indice][campo] + "? "));
+    if entrada == 1:
+        datos[indice][campo] = input("Ingresa el nuevo valor: ");
+
+def eliminarReportes(indice):
+    for reporte in datos[indice]['reportes']:
+        os.remove(reporte);
+    print("Se han eliminado los reportes");
+    return;
+    
 
 def generarReporte():
     listarDispositivos();
@@ -90,15 +120,17 @@ def generarReporte():
     informacionRequerida = obtenerInformacion(opt);
     infoSistema = informacionRequerida[0]
     infoInterfaces = informacionRequerida[1]
-    manipularCanva(infoSistema,infoInterfaces)
+    manipularCanva(infoSistema,infoInterfaces, opt-1)
     # Se genera el reporte del agente marcado
-    print("Se ha generado el reporte correctamente C:")
-    time.sleep(1)
+    guardarEnArchivo("Se ha generado el reporte correctamente C:");
+    return;
 
-def manipularCanva(infoSistema,infoInterfaces):
+def manipularCanva(infoSistema,infoInterfaces,indice):
+    date = datetime.now();
     w, h = A4
     rutaImagen = ""
-    c = canvas.Canvas("Reporte.pdf", pagesize=A4)
+    nombreArchivo = "Reporte-" + datos[indice]['direccionIP']+ "-" + str(date.time())+".pdf";
+    c = canvas.Canvas(nombreArchivo, pagesize=A4)
     #Se empieza a generar el reporte
     if infoSistema[0] == "Linux":
         rutaImagen = "./Logos/Linux.jpg"
@@ -106,6 +138,10 @@ def manipularCanva(infoSistema,infoInterfaces):
         rutaImagen = "./Logos/Windows.jpg"
     i = 50
     c.drawInlineImage(rutaImagen,300,h-200,150,150)
+    c.drawString(50, h - i, "Carlos Eduardo Muñoz Carbajal")
+    i = i+20
+    c.drawString(50, h - i, "Practica1 - Adquisición de Información")
+    i = i+20
     c.drawString(50, h - i, "Sistema Operativo: "+infoSistema[0])
     i = i+20
     c.drawString(50, h - i, "Nombre Dispositivo: "+infoSistema[1])
@@ -122,6 +158,8 @@ def manipularCanva(infoSistema,infoInterfaces):
         i = i+20
     c.showPage()
     c.save()
+    datos[indice]['reportes'].append(nombreArchivo);
+    return;
 
 def obtenerInformacion(opt):
     comunidad = datos[opt-1]['nombreComunidad']
@@ -167,6 +205,7 @@ while True:
     print("1. Agregar dispositivo")
     print("2. Eliminar dispositivo")
     print("3. Generar Reporte")
+    print("4. Cambiar información del dispositivo")
     print("0. Salir")
 
     opt = int(input("Ingresa la opción que desea realizar: "))
@@ -177,5 +216,7 @@ while True:
             eliminarDispositivo();
         case 3:
             generarReporte();
+        case 4:
+            cambiarDispositivo();
         case 0:
             exit()
