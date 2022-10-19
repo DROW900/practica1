@@ -1,1 +1,1 @@
-[{"direccionIP": "192.168.100.171", "versionSNMP": "SNMPv1", "nombreComunidad": "comunidadASR", "puerto": "161", "reportes": ["Reporte-192.168.0.16-23:03:32.743795.pdf", "Reporte-192.168.0.16-23:09:53.694827.pdf", "Reporte-192.168.100.171-22:48:02.249554.pdf", "Reporte-192.168.100.171-22:50:08.297805.pdf"]}, {"direccionIP": "192.168.100.168", "versionSNMP": "snmpv1", "nombreComunidad": "comunidadASRWin", "puerto": "161", "reportes": ["Reporte-192.168.100.168-22:48:10.349152.pdf", "Reporte-192.168.100.168-22:50:35.416380.pdf"]}]
+[]
