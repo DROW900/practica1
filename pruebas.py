@@ -1,4 +1,5 @@
 from ast import Str
+from copyreg import constructor
 from datetime import datetime
 from pysnmp.hlapi import *
 import json
@@ -72,17 +73,21 @@ def listarDispositivos():
 
 ## Se hace la eliminación del elemento en el arreglo y se lleva al archivo
 def eliminarDispositivo():
-    listarDispositivos()
-    opt = int(input("Ingresa el dispositivo a eliminar: "));
-    if opt == 0:
-        return
-    else:
-        opt = opt - 1;
-        eliminarReportes(opt-1);
-        datos.pop(opt)
-        guardarEnArchivo("Se ha eliminado el elemento :D")
-        time.sleep(1)
-        return
+    try:
+        listarDispositivos()
+        opt = int(input("Ingresa el dispositivo a eliminar: "));
+        if opt == 0:
+            return
+        else:
+            opt = opt - 1;
+            eliminarReportes(opt);
+            datos.pop(opt)
+            guardarEnArchivo("Se ha eliminado el elemento :D")
+            time.sleep(1)
+            return
+    except:
+        print("Ocurrió un error inesperado");
+        time.sleep(2);
 
 def cambiarDispositivo():
     os.system("clear");
@@ -106,24 +111,29 @@ def modificarCampo(mensaje,indice,campo):
 
 def eliminarReportes(indice):
     for reporte in datos[indice]['reportes']:
+        print("Eliminando el reporte " + reporte);
         os.remove(reporte);
     print("Se han eliminado los reportes");
     return;
     
 
 def generarReporte():
-    listarDispositivos();
-    opt = int(input("Ingresa el dispositivo al que se realizará el reporte: "));
-    if opt == 0:
-        return
-    print("Generando reporte para", datos[opt-1]['direccionIP'])
-    informacionRequerida = obtenerInformacion(opt);
-    infoSistema = informacionRequerida[0]
-    infoInterfaces = informacionRequerida[1]
-    manipularCanva(infoSistema,infoInterfaces, opt-1)
-    # Se genera el reporte del agente marcado
-    guardarEnArchivo("Se ha generado el reporte correctamente C:");
-    return;
+    try:
+        listarDispositivos();
+        opt = int(input("Ingresa el dispositivo al que se realizará el reporte: "));
+        if opt == 0:
+            return
+        print("Generando reporte para", datos[opt-1]['direccionIP'])
+        informacionRequerida = obtenerInformacion(opt);
+        infoSistema = informacionRequerida[0]
+        infoInterfaces = informacionRequerida[1]
+        manipularCanva(infoSistema,infoInterfaces, opt-1)
+        # Se genera el reporte del agente marcado
+        guardarEnArchivo("Se ha generado el reporte correctamente C:");
+        return;
+    except:
+        time.sleep(3);
+        return;
 
 def manipularCanva(infoSistema,infoInterfaces,indice):
     date = datetime.now();
@@ -138,10 +148,14 @@ def manipularCanva(infoSistema,infoInterfaces,indice):
         rutaImagen = "./Logos/Windows.jpg"
     i = 50
     c.drawInlineImage(rutaImagen,300,h-200,150,150)
+    c.drawString(50, h - i, "Administración de Servicios en Red")
+    i = i+20
+    c.drawString(50, h - i, "Practica 1")
+    i = i+20
     c.drawString(50, h - i, "Carlos Eduardo Muñoz Carbajal")
     i = i+20
-    c.drawString(50, h - i, "Practica1 - Adquisición de Información")
-    i = i+20
+    c.drawString(50, h - i, "4CM13")
+    i = i+60
     c.drawString(50, h - i, "Sistema Operativo: "+infoSistema[0])
     i = i+20
     c.drawString(50, h - i, "Nombre Dispositivo: "+infoSistema[1])
@@ -162,37 +176,43 @@ def manipularCanva(infoSistema,infoInterfaces,indice):
     return;
 
 def obtenerInformacion(opt):
-    comunidad = datos[opt-1]['nombreComunidad']
-    direccionIP = datos[opt-1]['direccionIP']
-    puerto = datos[opt-1]['puerto']
-    arrayInfo = [];
-    # Sistema Operativo
-    arrayInfo.append(consultaSNMP(comunidad,direccionIP,puerto,'1.3.6.1.2.1.1.1.0'))
-    # Nombre dispositivo
-    arrayInfo.append(consultaSNMP(comunidad,direccionIP,puerto,'1.3.6.1.2.1.1.5.0'))
-    # Contacto
-    arrayInfo.append(consultaSNMP(comunidad,direccionIP,puerto,'1.3.6.1.2.1.1.4.0'))
-    # Ubicación
-    arrayInfo.append(consultaSNMP(comunidad,direccionIP,puerto,'1.3.6.1.2.1.1.6.0'))
-    # Numero de interfaces
-    arrayInfo.append(consultaSNMP(comunidad,direccionIP,puerto,'1.3.6.1.2.1.2.1.0'))
-    numeroInterfaces = int(arrayInfo[4]);
-    # Se genera un diccionario de las interfaces
-    dictInterfaces = {}
-    i = 1
-    while i != numeroInterfaces+1:
-        oid = '1.3.6.1.2.1.2.2.1.2.'+ str(i)
-        nombreInterfaz = consultaSNMP(comunidad,direccionIP,puerto, oid)
-        oid = '1.3.6.1.2.1.2.2.1.7.'+ str(i)
-        estadoAministrativo = consultaSNMP(comunidad,direccionIP,puerto, oid)
-        if estadoAministrativo == '1':
-            dictInterfaces[nombreInterfaz] = "up"
-        elif estadoAministrativo == '2':
-            dictInterfaces[nombreInterfaz] = "down"
-        else:
-            dictInterfaces[nombreInterfaz] = "testing"
-        i = i+1;
-    return [arrayInfo,dictInterfaces]
+    try:
+        comunidad = datos[opt-1]['nombreComunidad']
+        direccionIP = datos[opt-1]['direccionIP']
+        puerto = datos[opt-1]['puerto']
+        arrayInfo = [];
+        # Sistema Operativo
+        arrayInfo.append(consultaSNMP(comunidad,direccionIP,puerto,'1.3.6.1.2.1.1.1.0'))
+        # Nombre dispositivo
+        arrayInfo.append(consultaSNMP(comunidad,direccionIP,puerto,'1.3.6.1.2.1.1.5.0'))
+        # Contacto
+        arrayInfo.append(consultaSNMP(comunidad,direccionIP,puerto,'1.3.6.1.2.1.1.4.0'))
+        # Ubicación
+        arrayInfo.append(consultaSNMP(comunidad,direccionIP,puerto,'1.3.6.1.2.1.1.6.0'))
+        # Numero de interfaces
+        arrayInfo.append(consultaSNMP(comunidad,direccionIP,puerto,'1.3.6.1.2.1.2.1.0'))
+        numeroInterfaces = int(arrayInfo[4]);
+        # Se genera un diccionario de las interfaces
+        dictInterfaces = {}
+        i = 1
+        if numeroInterfaces > 5:
+            numeroInterfaces = 5;
+        while i != numeroInterfaces+1:
+            oid = '1.3.6.1.2.1.2.2.1.2.'+ str(i)
+            nombreInterfaz = consultaSNMP(comunidad,direccionIP,puerto, oid)
+            oid = '1.3.6.1.2.1.2.2.1.7.'+ str(i)
+            estadoAministrativo = consultaSNMP(comunidad,direccionIP,puerto, oid)
+            if estadoAministrativo == '1':
+                dictInterfaces[nombreInterfaz] = "up"
+            elif estadoAministrativo == '2':
+                dictInterfaces[nombreInterfaz] = "down"
+            else:
+                dictInterfaces[nombreInterfaz] = "testing"
+            i = i+1;
+        return [arrayInfo,dictInterfaces]
+    except:
+        print("No se pudo conectar con el dispositivo, verifique la información")
+        raise
 
 
 ## Generación del menú interactivo
