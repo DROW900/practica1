@@ -1,14 +1,20 @@
 from ast import Str
+from concurrent.futures import thread
 from copyreg import constructor
 from datetime import datetime
 from pysnmp.hlapi import *
 import json
 import os
-import random
+import threading
 import time
 from reportlab.pdfgen import canvas
+from CreateRRD import generarRRD
 from reportlab.lib.pagesizes import A4
+from concurrent.futures import ThreadPoolExecutor
+
+from updateRRD import actualizarRRD
 datos = []
+executor = ThreadPoolExecutor(max_workers=10)
 
 def consultaSNMP(comunidad,host,puerto,oid):
     errorIndication, errorStatus, errorIndex, varBinds = next(
@@ -33,6 +39,10 @@ def agregarDispositivo():
     versionSNMP = input("Versión SNMP: ")
     nombreComunidad = input("Nombre de la comunidad: ")
     puerto = input("Puerto: ")
+    documentorrd = direccionIP + ".rrd"
+    ##Se genera el archivo rrd correspondiente al dispositivo y se ejecuta su actualización
+    generarRRD(documentorrd)
+    executor.submit(actualizarRRD, nombreComunidad, direccionIP, documentorrd)
     dispositivo = {
         'direccionIP': direccionIP,
         'versionSNMP': versionSNMP,
@@ -214,11 +224,16 @@ def obtenerInformacion(opt):
         print("No se pudo conectar con el dispositivo, verifique la información")
         raise
 
+def iniciarUpdates():
+    for dispositivo in datos:
+        print(dispositivo)
+        executor.submit(actualizarRRD, dispositivo['nombreComunidad'], dispositivo['direccionIP'], dispositivo['direccionIP']+".rrd")
 
 ## Generación del menú interactivo
+datos = leerDispositivos();
+iniciarUpdates();
 while True:
     os.system("clear")
-    datos = leerDispositivos();
     print("Sistema de Administración de Red")
     print("Practica 1 - Adquisición de Información")
     print("Carlos Eduardo Muñoz Carbajal    4CM13   2019630370\n")
