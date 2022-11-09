@@ -5,14 +5,16 @@ from datetime import datetime
 from pysnmp.hlapi import *
 import json
 import os
-import threading
 import time
+from datetime import datetime
 from reportlab.pdfgen import canvas
 from CreateRRD import generarRRD
 from reportlab.lib.pagesizes import A4
 from concurrent.futures import ThreadPoolExecutor
-
 from updateRRD import actualizarRRD
+from graphRRD import generarGrafica
+from fetch import consultarInfo
+
 datos = []
 executor = ThreadPoolExecutor(max_workers=10)
 
@@ -138,7 +140,7 @@ def generarReporte():
         infoSistema = informacionRequerida[0]
         infoInterfaces = informacionRequerida[1]
         manipularCanva(infoSistema,infoInterfaces, opt-1)
-        # Se genera el reporte del agente marcado
+        #Se genera el reporte del agente marcado
         guardarEnArchivo("Se ha generado el reporte correctamente C:");
         return;
     except:
@@ -160,7 +162,7 @@ def manipularCanva(infoSistema,infoInterfaces,indice):
     c.drawInlineImage(rutaImagen,300,h-200,150,150)
     c.drawString(50, h - i, "Administración de Servicios en Red")
     i = i+20
-    c.drawString(50, h - i, "Practica 1")
+    c.drawString(50, h - i, "Practica 2")
     i = i+20
     c.drawString(50, h - i, "Carlos Eduardo Muñoz Carbajal")
     i = i+20
@@ -181,6 +183,46 @@ def manipularCanva(infoSistema,infoInterfaces,indice):
         c.drawString(50, h - i, interfaz+": "+status)
         i = i+20
     c.showPage()
+    #Se imprimen los valores solicitados en el reporte
+    i = 50
+    resultados = consultarInfo(datos[indice]['direccionIP']+".rrd");
+
+    c.drawString(50, h - i, "Paquetes-Unicast")
+    i = i+20
+    c.drawString(50, h - i, str(resultados[0]))
+    i = i+20
+    c.drawString(50, h - i, "Paquetes-IPV4")
+    i = i+20
+    c.drawString(50, h - i, str(resultados[1]))
+    i = i+20
+    c.drawString(50, h - i, "Mensajes-Echo")
+    i = i+20
+    c.drawString(50, h - i, str(resultados[2]))
+    i = i+20
+    c.drawString(50, h - i, "Segmentos-Recibidos")
+    i = i+20
+    c.drawString(50, h - i, str(resultados[3]))
+    i = i+20
+    c.drawString(50, h - i, "Datagramas-UDP")
+    i = i+20
+    c.drawString(50, h - i, str(resultados[4]))
+    i = i+20
+    fechaInicial = input("Ingresa la fecha inicial: ")
+    fechaFinal = input("Ingresa la fecha terminal: ")
+    #Aquí se imprimen las gráficas
+    generarGrafica(datos[indice]['direccionIP']+".rrd", "unicast.png","paquetesUnicast", "Paquetes Unicast", fechaInicial, fechaFinal)
+    c.drawInlineImage('unicast.png',50,h-500,500,300)
+    c.showPage()
+    generarGrafica(datos[indice]['direccionIP']+".rrd", "IP.png", "paquetesIPV4", "Paquetes IPV4", fechaInicial, fechaFinal)
+    c.drawInlineImage('IP.png',50, h-300, 500, 300)
+    generarGrafica(datos[indice]['direccionIP']+".rrd", "mensajes.png", "mensajesECHO", "Mensajes ECHO", fechaInicial, fechaFinal)
+    c.drawInlineImage('mensajes.png',50, h-700, 500, 300)
+    c.showPage()
+    generarGrafica(datos[indice]['direccionIP']+".rrd", "segmentos.png", "segmentosRecibidos", "Segmentos Recibidos", fechaInicial, fechaFinal)
+    c.drawInlineImage('segmentos.png',50, h-300, 500, 300)
+    generarGrafica(datos[indice]['direccionIP']+".rrd", "datagramas.png","datagramasUDP", "Datagramas UDP", fechaInicial, fechaFinal)
+    c.drawInlineImage('datagramas.png',50, h-700, 500, 300)
+
     c.save()
     datos[indice]['reportes'].append(nombreArchivo);
     return;
